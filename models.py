@@ -81,8 +81,43 @@ class LogisticRegression:
         int
             Number of epochs taken to converge
         """
-        # TODO: Add your solution code here.
-        pass
+        prev_loss = float("inf")
+        epoch = 0
+        n = X.shape[0]
+
+        while True:
+            epoch += 1
+
+            # Shuffle data for this epoch
+            indices = np.random.permutation(n)
+            X_shuff = X[indices]
+            Y_shuff = Y[indices]
+
+            # Mini-batch gradient descent
+            for start in range(0, n, self.batch_size):
+                end = start + self.batch_size
+                X_batch = X_shuff[start:end]
+                Y_batch = Y_shuff[start:end]
+
+                scores = X_batch @ self.weights.T
+                scores -= np.max(scores, axis=1, keepdims=True)
+                exp_scores = np.exp(scores)
+                probs = (exp_scores + 1e-6) / (
+                    np.sum(exp_scores, axis=1, keepdims=True) + 1e-6
+                )
+
+                y_onehot = np.zeros((len(X_batch), self.n_classes))
+                y_onehot[np.arange(len(X_batch)), Y_batch] = 1
+
+                grad = (probs - y_onehot).T @ X_batch / len(X_batch)
+                self.weights -= self.alpha * grad
+
+            curr_loss = self.loss(X, Y)
+            if abs(prev_loss - curr_loss) < self.conv_threshold:
+                break
+            prev_loss = curr_loss
+
+        return epoch
 
     def loss(self, X: np.ndarray, Y: np.ndarray) -> float:
         """Calculates average log loss on the predictions made by the model
@@ -101,8 +136,14 @@ class LogisticRegression:
         float
             Average loss of the model on the dataset
         """
-        # TODO: Add your solution code here.
-        pass
+        scores = X @ self.weights.T
+        scores -= np.max(scores, axis=1, keepdims=True)
+        exp_scores = np.exp(scores)
+        probs = (exp_scores + 1e-6) / (
+            np.sum(exp_scores, axis=1, keepdims=True) + 1e-6
+        )
+        log_likelihood = -np.log(probs[np.arange(len(Y)), Y])
+        return np.mean(log_likelihood)
 
     def predict(self, X: np.ndarray) -> np.ndarray:
         """Compute predictions based on the learned parameters and examples X
@@ -118,8 +159,8 @@ class LogisticRegression:
         np.ndarray
             1D Numpy array of predictions corresponding to each example in X
         """
-        # TODO: Add your solution code here.
-        pass
+        scores = X @ self.weights.T
+        return np.argmax(scores, axis=1)
 
     def accuracy(self, X: np.ndarray, Y: np.ndarray) -> float:
         """Outputs the accuracy of the trained model on a given test
@@ -138,5 +179,5 @@ class LogisticRegression:
         float
             Accuracy percentage (between 0 and 1) on the given test set.
         """
-        # TODO: Add your solution code here.
-        pass
+        preds = self.predict(X)
+        return np.mean(preds == Y)
