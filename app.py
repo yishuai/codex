@@ -1,7 +1,9 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from models import PerceptionResult
 from perception import Perceiver
+from typing import List, Optional
+from timeseries import generate_timeseries
 
 app = FastAPI(title="Agent Perception Service", version="0.1.0")
 
@@ -20,3 +22,14 @@ perceiver.load()
 @app.get("/agent/perceive", response_model=PerceptionResult)
 def perceive():
     return perceiver.perceive()
+
+@app.get("/timeseries", response_model=List[dict])
+def get_timeseries(metric: str, start: Optional[str] = None, end: Optional[str] = None):
+    """
+    Fetch or generate time series data for the given metric within the specified time range.
+    """
+    try:
+        points = generate_timeseries(metric, start, end)
+        return points
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid time format")

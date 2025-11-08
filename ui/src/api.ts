@@ -9,9 +9,9 @@ export async function getPerceive(): Promise<PerceptionResult> {
   return data
 }
 
-export async function getTimeseries(params: {metrics: string[], start?: string, end?: string}): Promise<TimeseriesPoint[]> {
+export async function getTimeseries(params: {metric: string, start?: string, end?: string}): Promise<TimeseriesPoint[]> {
   const qs = new URLSearchParams()
-  qs.set('metrics', params.metrics.join(','))
+  qs.set('metric', params.metric)
   if (params.start) qs.set('start', params.start)
   if (params.end) qs.set('end', params.end)
   try {
@@ -21,16 +21,21 @@ export async function getTimeseries(params: {metrics: string[], start?: string, 
     // fallback mock: synthesize series around current perceive
     const now = new Date()
     const points: TimeseriesPoint[] = []
+    const metric = params.metric
     for (let i=300; i>=0; i--) {
       const t = new Date(now.getTime() - i*1000*60)
       const base = 300 + 50*Math.sin((2*Math.PI)*(i/1440))
-      const o = { 
-        timestamp: t.toISOString(),
+      const synthValues: Record<string, number> = {
         flow: base + 5*Math.sin(i/20),
         pressure: 7.5 + 0.2*Math.sin(i/60),
         frequency: 45 + 2*Math.sin(i/30),
         power: 30 + 0.2*(base + 5*Math.sin(i/20)),
         current: 10 + 0.03*(30 + 0.2*base)
+      }
+      const value = synthValues[metric] ?? base
+      const o = { 
+        timestamp: t.toISOString(),
+        [metric]: value
       } as TimeseriesPoint
       points.push(o)
     }
