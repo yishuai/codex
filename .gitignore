@@ -3,3 +3,5 @@
 **/local/
 **/pycache/
 .DS\_Store
+__pycache__/
+*.pyc
